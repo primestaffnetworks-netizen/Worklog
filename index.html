@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>WorkLog – Shift Tracker</title>
+  <meta name="theme-color" content="#080b12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080b12; --bg2: #0e1120; --bg3: #0a0d18;
+      --border: #1a1f35; --border2: #161b2e;
+      --text: #dde2f0; --muted: #3a4060;
+      --accent: #00b4d8; --accent2: #00d4ff;
+      --green: #00e676; --red: #ff3d6a;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Sora', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-thumb { background: #2a2f45; border-radius: 2px; }
+    button { cursor: pointer; font-family: inherit; }
+    input, select, textarea { font-family: inherit; outline: none; }
+    select option { background: var(--bg2); }
+    .btn { border: none; border-radius: 11px; padding: 11px 20px; font-weight: 600; font-size: 14px; transition: all .15s; }
+    .btn-p { background: linear-gradient(135deg, #00b4d8, #0077b6); color: #fff; }
+    .btn-p:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn-p:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn-g { background: transparent; color: #7a85a8; border: 1.5px solid var(--border); }
+    .btn-g:hover { border-color: var(--accent2); color: var(--text); }
+    .btn-d { background: #ff3d6a14; color: var(--red); border: 1.5px solid #ff3d6a33; }
+    .btn-d:hover { background: #ff3d6a22; }
+    .btn-sm { padding: 6px 13px; font-size: 12px; border-radius: 8px; }
+    .inp { width: 100%; background: #0e1120; border: 1.5px solid var(--border); border-radius: 11px; padding: 11px 14px; color: var(--text); font-size: 14px; transition: border .15s; }
+    .inp:focus { border-color: var(--accent2); }
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+    #app { display: flex; flex-direction: column; min-height: 100vh; }
+    #header { background: var(--bg); border-bottom: 1px solid #111520; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    #body { flex: 1; max-width: 660px; margin: 0 auto; width: 100%; padding: 20px 14px 96px; }
+    #nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid #111520; display: flex; justify-content: space-around; padding: 7px 0 env(safe-area-inset-bottom, 14px); z-index: 40; }
+    .nav-btn { background: none; border: none; padding: 9px 14px; border-radius: 10px; color: #4a5270; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: all .15s; min-width: 72px; }
+    .nav-btn.active { color: var(--accent2); background: #00d4ff12; }
+    .nav-btn .icon { font-size: 22px; line-height: 1; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+    .stat-box { background: linear-gradient(145deg, #0e1525, #080b12); border: 1px solid var(--border); border-radius: 16px; padding: 18px 12px; text-align: center; }
+    .shift-row { background: var(--bg3); border: 1px solid var(--border2); border-radius: 13px; padding: 13px 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 11px; }
+    .wcard { background: var(--bg3); border: 1px solid var(--border2); border-radius: 14px; padding: 15px; margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .tag-on { background: #0a2a1a; color: var(--green); border: 1px solid #00e67633; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+    .tag-off { background: #2a0a14; color: #ff5370; border: 1px solid #ff537033; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(6px); z-index: 50; display: flex; align-items: flex-end; justify-content: center; padding: 12px; }
+    @media (min-width: 580px) { .overlay { align-items: center; } }
+    .modal { background: var(--bg2); border: 1px solid #1e2438; border-radius: 22px; width: 100%; max-width: 440px; padding: 26px; animation: slideUp .2s ease; max-height: 90vh; overflow-y: auto; }
+    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 13px; }
+    .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .avatar { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    .toast { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 22px; font-size: 13px; font-weight: 600; z-index: 100; white-space: nowrap; animation: slideUp .2s ease; box-shadow: 0 8px 32px rgba(0,0,0,.5); pointer-events: none; }
+    .sync-bar { background: #00d4ff18; border-bottom: 1px solid #00d4ff22; padding: 6px 20px; font-size: 11px; color: var(--accent2); font-weight: 600; text-align: center; letter-spacing: .5px; }
+    .preview-box { background: #00d4ff0d; border: 1px solid #00d4ff22; border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .flex-row { display: flex; align-items: center; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+    .pill-btn { border: 1.5px solid var(--border); background: transparent; color: #7a85a8; border-radius: 8px; padding: 6px 13px; font-size: 12px; font-weight: 600; font-family: inherit; transition: all .15s; cursor: pointer; }
+    .pill-btn.active { border-color: var(--accent2); color: var(--accent2); }
+    .form-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: block; }
+    .form-group { display: flex; flex-direction: column; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="syncBar" class="sync-bar hidden">⟳ Saving to Google Sheets...</div>
+
+  <div id="header">
+    <div>
+      <div style="font-size:10px;font-weight:800;letter-spacing:2.5px;color:#00b4d8;text-transform:uppercase">WorkLog</div>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.3px">Shift Tracker</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-g btn-sm" onclick="loadAll()" id="refreshBtn">↻</button>
+      <button class="btn btn-p btn-sm" onclick="openLogShift()">+ Log Shift</button>
+    </div>
+  </div>
+
+  <div id="body">
+    <!-- Dashboard -->
+    <div id="view-dashboard">
+      <div class="flex-row">
+        <button class="pill-btn active" data-period="all" onclick="setPeriod('all')">All Time</button>
+        <button class="pill-btn" data-period="week" onclick="setPeriod('week')">This Week</button>
+        <button class="pill-btn" data-period="month" onclick="setPeriod('month')">This Month</button>
+      </div>
+      <div class="grid-3" id="statBoxes"></div>
+      <div class="section-label">Workers</div>
+      <div id="dashWorkers"></div>
+      <button class="btn btn-g" style="width:100%;margin-top:8px;display:none" id="exportBtn" onclick="exportCSV()">⬇ Export to CSV</button>
+    </div>
+
+    <!-- Shifts -->
+    <div id="view-shifts" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">
+        <div class="section-label" style="margin:0" id="shiftCount">Shift History</div>
+        <select class="inp" style="width:auto;font-size:12px;padding:6px 10px" id="filterWorkerSel" onchange="filterWorker=this.value;renderShifts()">
+          <option value="all">All workers</option>
+        </select>
+      </div>
+      <div id="shiftList"></div>
+      <button class="btn btn-g" style="width:100%;margin-top:8px;display:none" id="exportBtn2" onclick="exportCSV()">⬇ Export to CSV</button>
+    </div>
+
+    <!-- Workers -->
+    <div id="view-workers" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div class="section-label" style="margin:0" id="workerCount">Workers</div>
+        <button class="btn btn-p btn-sm" onclick="openAddWorker()">+ Add Worker</button>
+      </div>
+      <div id="workerList"></div>
+    </div>
+  </div>
+
+  <div id="nav">
+    <button class="nav-btn active" data-view="dashboard" onclick="setView('dashboard')"><span class="icon">📊</span><span>Summary</span></button>
+    <button class="nav-btn" data-view="shifts" onclick="setView('shifts')"><span class="icon">📋</span><span>Shifts</span></button>
+    <button class="nav-btn" data-view="workers" onclick="setView('workers')"><span class="icon">👥</span><span>Workers</span></button>
+  </div>
+</div>
+
+<!-- Add Worker Modal -->
+<div id="modalWorker" class="overlay hidden" onclick="closeModal('modalWorker')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Add Worker</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="inp" id="wName" placeholder="e.g. Jordan Smith" onkeydown="if(event.key==='Enter')saveWorker()" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hourly Rate (optional)</label>
+        <input class="inp" id="wRate" type="number" step="0.01" placeholder="e.g. 28.50" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-g" style="flex:1" onclick="closeModal('modalWorker')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" onclick="saveWorker()">Add Worker</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Log Shift Modal -->
+<div id="modalShift" class="overlay hidden" onclick="closeModal('modalShift')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Log a Shift</div>
+    <div id="shiftModalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytSQe1vFeG1Z-0okNc5VIUFW60UdS89R_Usewhp1226rO885gai8o_C8CbS6d3vm4g/exec";
+
+let workers = [], shifts = [];
+let currentView = "dashboard", currentPeriod = "all", filterWorker = "all";
+let toastTimer = null;
+
+// ── Utils ──────────────────────────────────────────────
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+function timeToMins(t) { const [h,m] = t.split(":").map(Number); return h*60+m; }
+function fmtDur(m) { m=Number(m); const h=Math.floor(m/60),r=m%60; return h>0?`${h}h${r>0?` ${r}m`:""}` :`${r}m`; }
+function fmtDate(d) { try { return new Date(d).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}); } catch(e){ return d; } }
+function avatarColor(n) { return `hsl(${(n||"?").charCodeAt(0)*47%360},50%,42%)`; }
+function wById(id) { return workers.find(w=>w.id===id); }
+function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function setSyncing(on) { document.getElementById("syncBar").classList.toggle("hidden",!on); }
+
+function notify(msg, type="ok") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.color = type==="err" ? "#ff5370" : "#00e676";
+  el.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.add("hidden"), 2800);
+}
+
+// ── API (GET only) ─────────────────────────────────────
+async function api(params) {
+  const url = SCRIPT_URL + "?" + new URLSearchParams(params).toString();
+  const r = await fetch(url);
+  return r.json();
+}
+
+// ── Load ───────────────────────────────────────────────
+async function loadAll() {
+  const btn = document.getElementById("refreshBtn");
+  btn.innerHTML = '<span class="spin">↻</span>';
+  try {
+    const [w, s] = await Promise.all([
+      api({action:"getWorkers"}),
+      api({action:"getShifts"})
+    ]);
+    workers = Array.isArray(w) ? w : [];
+    shifts  = Array.isArray(s) ? s : [];
+    renderAll();
+    populateWorkerFilter();
+    notify("Loaded ✓");
+  } catch(e) {
+    notify("Couldn't connect to Google Sheets", "err");
+  }
+  btn.innerHTML = "↻";
+}
+
+// ── Filtered shifts ────────────────────────────────────
+function getFiltered() {
+  let s = [...shifts];
+  if (filterWorker !== "all") s = s.filter(x=>x.workerId===filterWorker);
+  if (currentPeriod === "week")  s = s.filter(x=>Date.now()-new Date(x.date)<7*86400000);
+  if (currentPeriod === "month") s = s.filter(x=>Date.now()-new Date(x.date)<30*86400000);
+  return s.sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+// ── Render ─────────────────────────────────────────────
+function renderAll() { renderDashboard(); renderShifts(); renderWorkers(); }
+
+function renderDashboard() {
+  const fs = getFiltered();
+  const totalMins = fs.reduce((a,s)=>a+Number(s.duration),0);
+  const totalPay  = fs.reduce((a,s)=>{ const w=wById(s.workerId); return a+(w?.rate||0)*(Number(s.duration)/60); },0);
+
+  document.getElementById("statBoxes").innerHTML = [
+    {icon:"📋", val:fs.length,                    label:"Shifts"},
+    {icon:"⏱",  val:(totalMins/60).toFixed(1)+"h", label:"Hours"},
+    {icon:"💵",  val:"$"+totalPay.toFixed(2),       label:"Est. Pay"},
+  ].map(s=>`
+    <div class="stat-box">
+      <div style="font-size:22px;margin-bottom:6px">${s.icon}</div>
+      <div class="mono" style="font-size:18px;font-weight:700;color:#fff;letter-spacing:-.5px">${s.val}</div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:3px">${s.label}</div>
+    </div>`).join("");
+
+  const wStats = workers.map(w=>{
+    const ws=fs.filter(s=>s.workerId===w.id);
+    const mins=ws.reduce((a,s)=>a+Number(s.duration),0);
+    return {...w, count:ws.length, mins, pay:(mins/60)*(w.rate||0)};
+  });
+
+  document.getElementById("dashWorkers").innerHTML = wStats.length===0
+    ? `<div class="empty">No workers yet — go to Workers tab to add your crew.</div>`
+    : wStats.map(w=>`
+      <div class="card" style="margin-bottom:9px;padding:13px 16px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:11px">
+            <div class="avatar" style="width:38px;height:38px;font-size:14px;background:${avatarColor(w.name)};color:#fff">${w.name[0].toUpperCase()}</div>
+            <div>
+              <div style="font-weight:600;font-size:14px">${escHtml(w.name)}</div>
+              <div style="font-size:11px;color:var(--muted)">${w.count} shift${w.count!==1?"s":""} · ${fmtDur(w.mins)}${!w.active?` <span style="color:var(--red)">· inactive</span>`:""}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono" style="font-weight:700;font-size:17px;color:${w.rate>0?"var(--green)":"var(--muted)"}">
+              ${w.rate>0?"$"+w.pay.toFixed(2):"—"}
+            </div>
+            ${w.rate>0?`<div style="font-size:11px;color:var(--muted)">$${w.rate}/hr</div>`:""}
+          </div>
+        </div>
+      </div>`).join("");
+
+  document.getElementById("exportBtn").style.display = fs.length>0 ? "block" : "none";
+}
+
+function renderShifts() {
+  const fs = getFiltered();
+  document.getElementById("shiftCount").textContent = `Shift History (${fs.length})`;
+  document.getElementById("exportBtn2").style.display = fs.length>0 ? "block" : "none";
+  document.getElementById("shiftList").innerHTML = fs.length===0
+    ? `<div class="empty">No shifts logged yet.</div>`
+    : fs.map(s=>{
+        const w=wById(s.workerId);
+        const pay=w?((Number(s.duration)/60)*(w.rate||0)):0;
+        return `
+        <div class="shift-row">
+          <div class="avatar" style="width:34px;height:34px;font-size:13px;background:${w?avatarColor(w.name):"#222"};color:#fff">
+            ${w?w.name[0].toUpperCase():"?"}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px">${w?escHtml(w.name):"Unknown"}</div>
+            <div style="font-size:11px;color:#4a5270">${fmtDate(s.date)} · ${s.startTime}–${s.endTime} · ${fmtDur(s.duration)}</div>
+            ${s.notes&&s.notes!=="undefined"?`<div style="font-size:11px;color:var(--accent);margin-top:2px">${escHtml(s.notes)}</div>`:""}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            ${pay>0?`<div class="mono" style="font-size:14px;font-weight:700;color:var(--green)">$${pay.toFixed(2)}</div>`:""}
+            <button class="btn btn-d btn-sm" style="margin-top:5px" onclick="deleteShift('${s.id}')">✕</button>
+          </div>
+        </div>`;
+      }).join("");
+}
+
+function renderWorkers() {
+  document.getElementById("workerCount").textContent = `Workers (${workers.length})`;
+  document.getElementById("workerList").innerHTML = workers.length===0
+    ? `<div class="empty">No workers yet. Tap + Add Worker to get started.</div>`
+    : workers.map(w=>`
+      <div class="wcard">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+          <div class="avatar" style="width:42px;height:42px;font-size:15px;background:${avatarColor(w.name)};color:#fff">${w.name[0].toUpperCase()}</div>
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(w.name)}</div>
+            <div style="font-size:11px;color:var(--muted)">${w.rate>0?"$"+w.rate+"/hr":"No rate set"}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+          <span class="${w.active?"tag-on":"tag-off"}">${w.active?"Active":"Off"}</span>
+          <button class="btn btn-g btn-sm" onclick="toggleActive('${w.id}')">${w.active?"Deactivate":"Activate"}</button>
+          <button class="btn btn-d btn-sm" onclick="removeWorker('${w.id}')">✕</button>
+        </div>
+      </div>`).join("");
+}
+
+function populateWorkerFilter() {
+  const sel = document.getElementById("filterWorkerSel");
+  const cur = sel.value;
+  sel.innerHTML = `<option value="all">All workers</option>` +
+    workers.map(w=>`<option value="${w.id}"${w.id===cur?" selected":""}>${escHtml(w.name)}</option>`).join("");
+}
+
+// ── Navigation ─────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  ["dashboard","shifts","workers"].forEach(id=>{
+    document.getElementById("view-"+id).classList.toggle("hidden", id!==v);
+  });
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.view===v);
+  });
+  if (v==="shifts") renderShifts();
+}
+
+function setPeriod(p) {
+  currentPeriod = p;
+  document.querySelectorAll(".pill-btn").forEach(b=>b.classList.toggle("active", b.dataset.period===p));
+  renderDashboard();
+}
+
+// ── Workers ────────────────────────────────────────────
+function openAddWorker() {
+  document.getElementById("wName").value = "";
+  document.getElementById("wRate").value = "";
+  document.getElementById("modalWorker").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("wName").focus(), 150);
+}
+
+async function saveWorker() {
+  const name = document.getElementById("wName").value.trim();
+  const rate = parseFloat(document.getElementById("wRate").value) || 0;
+  if (!name) return;
+  const w = { id:genId(), name, rate, active:true };
+  closeModal("modalWorker");
+  workers.push(w);
+  renderAll();
+  populateWorkerFilter();
+  setSyncing(true);
+  await api({ action:"addWorker", id:w.id, name:w.name, rate:w.rate, active:"true" });
+  setSyncing(false);
+  notify(`${name} added ✓`);
+}
+
+async function toggleActive(id) {
+  const w = wById(id);
+  if (!w) return;
+  w.active = !w.active;
+  renderAll();
+  await api({ action:"updateWorker", id:w.id, rate:w.rate, active:String(w.active) });
+}
+
+async function removeWorker(id) {
+  const w = wById(id);
+  if (!confirm(`Remove ${w?.name}? Their shift history is kept.`)) return;
+  workers = workers.filter(x=>x.id!==id);
+  renderAll();
+  populateWorkerFilter();
+  await api({ action:"deleteWorker", id });
+  notify(`${w?.name} removed`, "err");
+}
+
+// ── Shifts ─────────────────────────────────────────────
+function openLogShift() {
+  const active = workers.filter(w=>w.active);
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("shiftModalBody").innerHTML = active.length===0
+    ? `<div style="text-align:center;padding:16px 0">
+        <div style="font-size:14px;color:var(--muted);margin-bottom:14px">No active workers. Add someone first.</div>
+        <button class="btn btn-p" onclick="closeModal('modalShift');openAddWorker();setView('workers')">Add Worker</button>
+       </div>`
+    : `<div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group">
+          <label class="form-label">Worker *</label>
+          <select class="inp" id="sWorker" onchange="updatePreview()">
+            <option value="">Select worker...</option>
+            ${active.map(w=>`<option value="${w.id}">${escHtml(w.name)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input class="inp" id="sDate" type="date" value="${today}" onchange="updatePreview()" />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Start</label>
+            <input class="inp" id="sStart" type="time" value="09:00" onchange="updatePreview()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">End</label>
+            <input class="inp" id="sEnd" type="time" value="17:00" onchange="updatePreview()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <input class="inp" id="sNotes" placeholder="e.g. covered lunch shift" />
+        </div>
+        <div id="shiftPreview" class="preview-box" style="display:none"></div>
+        <div class="modal-actions">
+          <button class="btn btn-g" style="flex:1" onclick="closeModal('modalShift')">Cancel</button>
+          <button class="btn btn-p" style="flex:2" onclick="saveShift()">Save Shift</button>
+        </div>
+       </div>`;
+  document.getElementById("modalShift").classList.remove("hidden");
+  setTimeout(updatePreview, 50);
+}
+
+function updatePreview() {
+  const start = document.getElementById("sStart")?.value;
+  const end   = document.getElementById("sEnd")?.value;
+  const wId   = document.getElementById("sWorker")?.value;
+  const prev  = document.getElementById("shiftPreview");
+  if (!prev || !start || !end) return;
+  let dur = timeToMins(end) - timeToMins(start);
+  if (dur <= 0) dur += 1440;
+  const w = wById(wId);
+  const pay = w?.rate ? ((dur/60)*w.rate).toFixed(2) : null;
+  prev.style.display = "block";
+  prev.innerHTML = `<span style="color:var(--accent2);font-weight:600">Duration: ${fmtDur(dur)}</span>${pay?`<span style="color:var(--green);margin-left:14px;font-weight:600">Est. pay: $${pay}</span>`:""}`;
+}
+
+async function saveShift() {
+  const wId   = document.getElementById("sWorker").value;
+  const date  = document.getElementById("sDate").value;
+  const start = document.getElementById("sStart").value;
+  const end   = document.getElementById("sEnd").value;
+  const notes = document.getElementById("sNotes").value || "";
+  if (!wId || !date) return;
+  let dur = timeToMins(end) - timeToMins(start);
+  if (dur <= 0) dur += 1440;
+  const s = { id:genId(), workerId:wId, date, startTime:start, endTime:end, duration:dur, notes };
+  closeModal("modalShift");
+  shifts.push(s);
+  renderAll();
+  setSyncing(true);
+  await api({ action:"addShift", id:s.id, workerId:s.workerId, date:s.date, startTime:s.startTime, endTime:s.endTime, duration:s.duration, notes:s.notes });
+  setSyncing(false);
+  notify("Shift saved to Google Sheets ✓");
+}
+
+async function deleteShift(id) {
+  if (!confirm("Delete this shift?")) return;
+  shifts = shifts.filter(x=>x.id!==id);
+  renderShifts();
+  renderDashboard();
+  await api({ action:"deleteShift", id });
+  notify("Shift deleted", "err");
+}
+
+// ── Export ─────────────────────────────────────────────
+function exportCSV() {
+  const fs = getFiltered();
+  const rows = [["Worker","Date","Start","End","Hours","Rate ($/hr)","Pay ($)","Notes"]];
+  fs.forEach(s=>{
+    const w=wById(s.workerId);
+    rows.push([w?.name||"?", s.date, s.startTime, s.endTime,
+      (Number(s.duration)/60).toFixed(2), w?.rate||0,
+      ((Number(s.duration)/60)*(w?.rate||0)).toFixed(2), s.notes||""]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = `worklog_${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  notify("CSV exported!");
+}
+
+function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+// ── Boot ───────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
